@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ActivityResultApi</string>
+    <string name="get_username">Get username</string>
+    <string name="get_image">Get image</string>
+    <string name="input_your_name">Input your name:</string>
+    <string name="save">Save</string>
+</resources>
