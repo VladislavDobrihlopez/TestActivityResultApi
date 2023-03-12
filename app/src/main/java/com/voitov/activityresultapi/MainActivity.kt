@@ -1,10 +1,13 @@
 package com.voitov.activityresultapi
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -18,31 +21,55 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         initViews()
 
+        val contractText = object : ActivityResultContract<Intent, String?>() {
+            override fun createIntent(context: Context, input: Intent): Intent {
+                return input
+            }
+
+            override fun parseResult(resultCode: Int, intent: Intent?): String? {
+                return if (resultCode == RESULT_OK) {
+                    intent?.getStringExtra(UserNameActivity.EXTRA_NAME)
+                } else {
+                    null
+                }
+            }
+        }
+
+        val contractImage = object : ActivityResultContract<Intent, Uri?>() {
+            override fun createIntent(context: Context, input: Intent): Intent {
+                return input.apply {
+                    type = "image/*"
+                }
+            }
+
+            override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+                return if (resultCode == RESULT_OK) {
+                    intent?.data
+                } else {
+                    null
+                }
+            }
+        }
+
+        val contractTextLauncher = registerForActivityResult(contractText) { name ->
+            if (name.isNullOrBlank()) {
+                return@registerForActivityResult
+            }
+            textViewUserName.text = name
+        }
+
+        val contractImageLauncher = registerForActivityResult(contractImage) { it ->
+            it?.let { uri ->
+                imageViewGalleryImage.setImageURI(uri)
+            }
+        }
+
         buttonGetUserName.setOnClickListener {
-            startActivityForResult(
-                UserNameActivity.newIntent(this),
-                REQUEST_CODE_RETRIEVING_USERNAME
-            )
+            contractTextLauncher.launch(UserNameActivity.newIntent(this))
         }
 
         buttonGetImage.setOnClickListener {
-            startActivityForResult(Intent(Intent.ACTION_PICK).apply {
-                type = "image/*"
-            }, REQUEST_CODE_RETRIEVING_IMAGE)
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            REQUEST_CODE_RETRIEVING_USERNAME -> {
-                val name = data?.getStringExtra(UserNameActivity.EXTRA_NAME) ?: ""
-                textViewUserName.text = name
-            }
-            REQUEST_CODE_RETRIEVING_IMAGE -> {
-                imageViewGalleryImage.setImageURI(data?.data)
-            }
+            contractImageLauncher.launch(Intent(Intent.ACTION_PICK))
         }
     }
 
@@ -51,10 +78,5 @@ class MainActivity : AppCompatActivity() {
         textViewUserName = findViewById(R.id.textViewUserName)
         buttonGetImage = findViewById(R.id.buttonGetImage)
         imageViewGalleryImage = findViewById(R.id.imageViewGalleryImage)
-    }
-
-    companion object {
-        const val REQUEST_CODE_RETRIEVING_USERNAME = 100
-        const val REQUEST_CODE_RETRIEVING_IMAGE = 101
     }
 }
