@@ -1,13 +1,10 @@
 package com.voitov.activityresultapi
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -21,41 +18,17 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         initViews()
 
-        val contractText = object : ActivityResultContract<Intent, String?>() {
-            override fun createIntent(context: Context, input: Intent): Intent {
-                return input
-            }
+        val contractText = ActivityResultContracts.StartActivityForResult()
+        val contractImage = ActivityResultContracts.GetContent()
 
-            override fun parseResult(resultCode: Int, intent: Intent?): String? {
-                return if (resultCode == RESULT_OK) {
-                    intent?.getStringExtra(UserNameActivity.EXTRA_NAME)
-                } else {
-                    null
+        val contractTextLauncher = registerForActivityResult(contractText) { activityResult ->
+            if (activityResult.resultCode == RESULT_OK) {
+                val name = activityResult.data?.getStringExtra(UserNameActivity.EXTRA_NAME)
+                if (name.isNullOrBlank()) {
+                    return@registerForActivityResult
                 }
+                textViewUserName.text = name
             }
-        }
-
-        val contractImage = object : ActivityResultContract<Intent, Uri?>() {
-            override fun createIntent(context: Context, input: Intent): Intent {
-                return input.apply {
-                    type = "image/*"
-                }
-            }
-
-            override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-                return if (resultCode == RESULT_OK) {
-                    intent?.data
-                } else {
-                    null
-                }
-            }
-        }
-
-        val contractTextLauncher = registerForActivityResult(contractText) { name ->
-            if (name.isNullOrBlank()) {
-                return@registerForActivityResult
-            }
-            textViewUserName.text = name
         }
 
         val contractImageLauncher = registerForActivityResult(contractImage) { it ->
@@ -69,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         buttonGetImage.setOnClickListener {
-            contractImageLauncher.launch(Intent(Intent.ACTION_PICK))
+            contractImageLauncher.launch("image/*")
         }
     }
 
